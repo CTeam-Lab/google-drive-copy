@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
+    <?!= include('appCSS'); ?>
+  </head>
+  <body class="container">
+    <div class="row">
+      <div class="col-xs-12 text-align-center">
+        <h1>Google Drive Migration</h1>
+        <p class="top-padding-15"><u>A fast way to copy folders and files that you own on your <i><b>'@rocket-internet.pt'</b></i> account to your <i><b>'@africainternetgroup.com'</b></i> account</u></p>
+      </div>
+    </div>
+
+    <!-- Run action -->
+    <div id="run" class="row hidden top-padding-15">
+      <div class="col-xs-12 text-align-center">
+        <button id="run-btn" class="btn btn-primary" type="button" onclick="driveMigration.run()">Analyse</button>
+        <button id="reset-btn" class="btn btn-danger hidden" type="button" onclick="driveMigration.reset()">Reset</button>
+      </div>
+    </div>
+
+    <!-- Folder description -->
+    <div id="overview" class="row hidden top-padding-15">
+      <div class="col-xs-6 col-xs-offset-3">
+        <div class="row">
+          <div class="col-xs-6">
+            <p><b>Source</b></p>
+            <p># folders: <span id="source_num_folders"></span></p>
+            <p># files: <span id="source_num_files"></span></p>
+          </div>
+          <div class="col-xs-6">
+            <p><b>Destination</b></p>
+            <p># folders: <span id="destination_num_folders">0</span></p>
+            <p># files: <span id="destination_num_files">0</span></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- More information -->
+    <div class="row top-padding-15">
+      <div class="col-xs-6 col-xs-offset-3">
+        <div id="console" class="alert alert-console" role="alert"></div>
+        <div class="alert alert-info" role="alert">
+          <h2 class="no-margin-top text-align-center">Instructions</h2>
+          <ul>
+           <li>Create a folder inside your Google Drive named <i><u><?= sourceDirName ?></u></i></li>
+           <li>Move all the files you want to copy to your <i><u><?= sourceDirName ?></u></i> folder</li>
+           <li>Press 'Start Copy' and wait for feedback</li>
+          </ul>
+        </div>
+        <div class="alert alert-warning" role="alert">
+          <h2 class="no-margin-top text-align-center">Possible problems</h2>
+          <ul>
+           <li>The maximum runtime for <b>Google Apps Script</b> is 6 minutes, so if you have lots of files you might need to run this tool several times</li>
+           <li>If the file size is too large it might break the copy process due to Google restrictions</li>
+           <li>The script keeps track of the files that have been successfully copied to avoid duplicated files</li>
+          </ul>
+        </div>
+        <div class="alert alert-danger" role="alert">
+          <h2 class="no-margin-top text-align-center">Try it at your own risk!</h2>
+          <ul>
+           <li>Although I had no problems running this tool I am not responsible for any damages caused to the files during the copy process</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <footer class="row">
+      <div class="col-xs-12 text-align-center font-size-12">
+        <p><b>Ponteiro Team</b></p>
+        <p>Eduardo Alves</p>
+        <p class="top-padding-20">Released under the <a href="http://www.opensource.org/licenses/mit-license.php" target="_blank">MIT License</a></p>
+        <p><a href="https://github.com/PonteiroTeam/google-drive-copy" target="_blank">GitHub</a></p>
+      </div>
+    </footer>
+
+    <script src="https://code.jquery.com/jquery-2.1.3.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+    <?!= include('appJS'); ?>
+  </body>
+</html>

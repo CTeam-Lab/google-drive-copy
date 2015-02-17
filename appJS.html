@@ -1,0 +1,262 @@
+<script>
+ function DriveMigration() {
+  this.$runButton = $('#run-btn');
+  this.$resetButton = $('#reset-btn');
+  this.$overview = $('#overview');
+  this.$sourceNumFolders = $('#source_num_folders');
+  this.$sourceNumFiles = $('#source_num_files');
+  
+  this.states = {};
+  this.currentState = this.states.analyse;
+ }
+ 
+ DriveMigration.prototype = {
+  constructor: DriveMigration,
+  
+  initialize: function(data)
+  {
+   $('#run').toggleClass('hidden show');
+  
+   this.states = data.states;
+   this.currentState = this.states[data.currentState];
+   this.progress = data.progress;
+   
+   if (this.currentState.val >= this.states.prepare.val) {
+    this.updateAnalyseInfo(data.analysis);
+   }
+   
+   this.initState();
+  },
+  
+  /**
+   * Run action
+   */
+  run: function()
+  {
+   if (this.currentState.val == this.states.analyse.val) {
+    this.analyse();
+   } else if (this.currentState.val == this.states.prepare.val) {
+    this.prepare();
+   } else if (this.currentState.val == this.states.copy.val) {
+    this.copy();
+   } else {
+    // Do nothing
+   }
+  },
+  
+  /**
+   * Reset
+   */
+  reset: function()
+  {
+   google.script.run.withSuccessHandler($.proxy(this.resetSuccess, this)).withFailureHandler($.proxy(this.resetFailure, this)).reset();
+  },
+  
+  resetSuccess: function(data)
+  {
+   this.states = data.states;
+   this.progress = data.progress;
+   this.setState(data.currentState);
+   this.analysis = data.analysis;
+   successLogger(data.message);
+  },
+  
+  resetFailure: function(data)
+  {
+   data = JSON.parse(data);
+   errorLogger(data.error);
+   this.setState(data.state);
+  },
+  
+  /**
+   * Analyse
+   */
+  analyse: function()
+  {
+   this.nextState();
+   google.script.run.withSuccessHandler($.proxy(this.analyseSuccess, this)).withFailureHandler($.proxy(this.analyseFailure, this)).analyse();
+  },
+  
+  analyseSuccess: function(message)
+  {
+   this.setState(message.state);
+   this.updateAnalyseInfo(message.data);
+  },
+  
+  analyseFailure: function(e)
+  {
+   console.log('analyse failure');
+   data = JSON.parse(e.message);
+   errorLogger(e.error);
+   this.setState(e.state);
+  },
+  
+  updateAnalyseInfo: function(analysis)
+  {
+   infoLogger('You can now prepare the script to start the copy...');
+   this.analysis = analysis;
+   this.$sourceNumFolders.text(this.analysis.totalDirs);
+   this.$sourceNumFiles.text(this.analysis.totalFiles);
+  },
+  
+  /**
+   * Prepare
+   */
+  prepare: function()
+  {
+   this.nextState();
+   google.script.run.withSuccessHandler($.proxy(this.prepareSuccess, this)).withFailureHandler($.proxy(this.prepareFailure, this)).prepare();
+  },
+  
+  prepareSuccess: function(data)
+  {
+   successLogger(data.message);
+   this.setState(data.state);
+  },
+  
+  prepareFailure: function(data)
+  {
+   console.log('prepare failure');
+   data = JSON.parse(data.message);
+   errorLogger(data.error);
+   this.setState(data.state);
+  },
+  
+  /**
+   * Copy
+   */
+  copy: function()
+  {
+   this.nextState();
+   google.script.run.withSuccessHandler($.proxy(this.copySuccess, this)).withFailureHandler($.proxy(this.copyFailure, this)).copy();
+  },
+  
+  copySuccess: function(data)
+  {
+   successLogger(data.message);
+   this.setState(data.currentState);
+  },
+  
+  copyFailure: function(data)
+  {
+   console.log('copy failure');
+   data = JSON.parse(data.message);
+   errorLogger(data.error);
+   this.setState(data.state);
+  },
+  
+  /**
+   * State Machine
+   */
+  initState: function()
+  {
+   this.updateRunButton();
+   this.stateChanged();
+  },
+  
+  nextState: function()
+  {
+   this.currentState = this.states[this.currentState.next];
+   this.updateRunButton();
+   this.stateChanged();
+  },
+  
+  previousState: function()
+  {
+   this.currentState = this.states[this.currentState.back];
+   this.stateChanged();
+  },
+  
+  setState: function(state)
+  {
+   this.currentState = this.states[state];
+   this.updateRunButton();
+   this.stateChanged();
+  },
+  
+  stateChanged: function()
+  {
+   this.updateRunButton();
+   this.toggleResetButton();
+   this.toggleFoldersOverview();
+  },
+  
+  /**
+   * Errors
+   */
+  getErrorMessage: function(code)
+  {
+   return this.errorCodes[code]
+  },
+  
+  /**
+   * UI Update
+   */
+  updateRunButton: function()
+  {
+   this.$runButton.text(this.currentState.text);
+   if (this.currentState.disabled && !this.$runButton.hasClass('disabled')) {
+    this.$runButton.addClass('disabled');
+   } else if (!this.currentState.disabled && this.$runButton.hasClass('disabled')) {
+    this.$runButton.removeClass('disabled');
+   }
+  },
+  
+  toggleResetButton: function()
+  {
+   if (this.currentState.val == this.states.prepare.val || this.currentState.val == this.states.copy.val || this.currentState.val == this.states.copyRunning.val || this.currentState.val == this.states.finished.val) {
+    if (this.$resetButton.hasClass('hidden')) {
+     this.$resetButton.toggleClass('hidden visible');
+    }
+   } else {
+    if (this.$resetButton.hasClass('visible')) {
+     this.$resetButton.toggleClass('hidden visible');
+    }
+   }
+  },
+  
+  toggleFoldersOverview: function()
+  {
+   // Display Source Folder Overview
+   if (this.currentState != this.states.analyse && this.$overview.hasClass('hidden')) {
+    this.$overview.toggleClass('hidden visible');
+   }
+  }
+ };
+ 
+ var driveMigration, errorLogger, successLogger, infoLogger, $console;
+ 
+ driveMigration = new DriveMigration();
+ 
+ errorLogger = function(message) {
+  $console.append('<p class="error">' + message + '</p>');
+ }
+ 
+ successLogger = function(message) {
+  $console.append('<p class="success">' + message + '</p>');
+ }
+ 
+ infoLogger = function(message) {
+  $console.append('<p class="info">' + message + '</p>');
+ }
+ 
+ $(function() {
+  $console = $('#console');
+  infoLogger('Loading information...');
+  
+  google.script.run.withSuccessHandler(
+   function(data)
+   {
+    successLogger(data.message);
+    driveMigration.initialize(data);
+   }
+  ).withFailureHandler(
+   function(data)
+   {
+    console.log('initialization failed');
+    data = JSON.parse(data.message);
+    errorLogger(data.error);
+   }
+  ).init();
+ });
+</script>
